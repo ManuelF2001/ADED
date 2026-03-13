@@ -7,7 +7,7 @@ O objetivo deste trabalho é processar logs do supercomputador Deucalion para ge
 
 Foi-nos fornecido um script inicial (`statsEHPC_v2_init.py`) que já produz o relatório, mas de forma ineficiente. O foco do nosso trabalho incide na **Track A: Spark SQL Optimization**.
 
-## 🚀 Metodologia & Benchmarking Protocol
+##  Metodologia & Benchmarking Protocol
 O projeto consiste em identificar estrangulamentos no código de base e aplicar técnicas de otimização em Apache Spark de forma isolada e sistemática:
 * **Uma alteração de cada vez:** As otimizações são testadas individualmente para garantir que o ficheiro final gerado (`params.tex`) mantém a exatidão semântica.
 * **Warm-up da JVM:** Antes de registar os dados de uma configuração, é feita uma execução inicial ("Warmup") que é descartada, de forma a aquecer a *Java Virtual Machine*.
