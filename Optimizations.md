@@ -1,28 +1,28 @@
 # Registo de Otimizações Spark SQL (Track A)
 
-[cite_start]Este documento detalha o progresso das otimizações individuais aplicadas ao script de extração de dados do HPC, conforme exigido no guião do projeto[cite: 36].
+Este documento detalha o progresso das otimizações individuais aplicadas ao script de extração de dados do HPC, conforme exigido no guião do projeto.
 
 ## 🐢 Baseline
 O script de base (`baseline.py`) processa os dados de forma muito ineficiente. A análise do plano físico (`explain("extended")`) e do tempo de execução revelou falhas graves:
-* [cite_start]**Leitura Iterativa:** Usa um ciclo `for` em Python (`os.walk`) para ler os ficheiros um a um e efetua dezenas de operações `.union()`[cite: 25, 47]. Isto impede o Spark de planear a leitura em paralelo.
-* [cite_start]**Driver Bottleneck:** Possui dezenas de ações `.collect()` dentro de loops (por período, por agência, etc.)[cite: 34]. Isto obriga o Spark a parar o processamento distribuído constantemente para enviar pequenos pedaços de dados de volta ao *Driver*.
+* **Leitura Iterativa:** Usa um ciclo `for` em Python (`os.walk`) para ler os ficheiros um a um e efetua dezenas de operações `.union()`. Isto impede o Spark de planear a leitura em paralelo.
+* **Driver Bottleneck:** Possui dezenas de ações `.collect()` dentro de loops (por período, por agência, etc.). Isto obriga o Spark a parar o processamento distribuído constantemente para enviar pequenos pedaços de dados de volta ao *Driver*.
 
 ---
 
 ## ⚡ Otimização 1: Query Simplification (Parallel Read)
 **O que mudou:** Removemos o loop iterativo do Python que lia ficheiros individualmente.
-[cite_start]**Como fizemos:** Substituímos o bloco `os.walk` e o iterativo `.union()` por uma leitura única e paralela usando um *wildcard path* (`sc.read.csv("jobs_*.txt")`)[cite: 47]. O mês de cada registo passou a ser extraído de forma distribuída diretamente da string do nome do ficheiro usando a função `pyspark.sql.functions.input_file_name()` e expressões regulares.
+[cite_start]**Como fizemos:** Substituímos o bloco `os.walk` e o iterativo `.union()` por uma leitura única e paralela usando um *wildcard path* (`sc.read.csv("jobs_*.txt")`). O mês de cada registo passou a ser extraído de forma distribuída diretamente da string do nome do ficheiro usando a função `pyspark.sql.functions.input_file_name()` e expressões regulares.
 **Impacto Esperado:** Redução massiva do estrangulamento na leitura e paralelização nativa do Dataframe logo na ingestão.
 
 ---
 
 ## ⚡ Otimização 5: Output Path Efficiency (Single Collect)
-[cite_start]**O que mudou:** Evitámos múltiplas chamadas `.collect()` e o trabalho sequencial de geração do ficheiro de output[cite: 48, 130].
-[cite_start]**Como fizemos:** Em vez de usar filtros e operações `groupby` repetidas dentro de um ciclo temporal[cite: 43], agregámos todos os dados do DataFrame de uma só vez usando um único `groupby` pelas chaves principais (`Period`, `Agency`, `cluster`, `COMPLETED`).
-Efetuámos um único `.collect()` deste resultado agregado e pré-calculado (que é muito pequeno e cabe facilmente na RAM do Python). [cite_start]O ficheiro `params.tex` é assim escrito numa passagem única (*single pass*) a partir deste dicionário processado[cite: 48].
+**O que mudou:** Evitámos múltiplas chamadas `.collect()` e o trabalho sequencial de geração do ficheiro de output[cite: 48, 130].
+**Como fizemos:** Em vez de usar filtros e operações `groupby` repetidas dentro de um ciclo temporal, agregámos todos os dados do DataFrame de uma só vez usando um único `groupby` pelas chaves principais (`Period`, `Agency`, `cluster`, `COMPLETED`).
+Efetuámos um único `.collect()` deste resultado agregado e pré-calculado (que é muito pequeno e cabe facilmente na RAM do Python). O ficheiro `params.tex` é assim escrito numa passagem única (*single pass*) a partir deste dicionário processado.
 
 ### 📊 Resultados Isolados (Opt 5)
-[cite_start]Abaixo encontram-se as métricas recolhidas no HPC Deucalion, usando o nosso *Event-log parser*[cite: 83]. [cite_start]Os resultados representam a média e o desvio padrão de 3 execuções válidas (após "warm-up" da JVM)[cite: 55, 61].
+Abaixo encontram-se as métricas recolhidas no HPC Deucalion, usando o nosso *Event-log parser*[cite: 83]. [cite_start]Os resultados representam a média e o desvio padrão de 3 execuções válidas (após "warm-up" da JVM).
 
 | Métrica | Média | Desvio Padrão |
 | :--- | :--- | :--- |
