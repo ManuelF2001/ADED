@@ -121,7 +121,7 @@ if __name__ == '__main__':
           )
 
     # ---------------------------------------------------------
-    # LÓGICA DE LEITURA BASELINE (MANTIDA DE PROPÓSITO)
+    # LÓGICA DE LEITURA BASELINE 
     # ---------------------------------------------------------
     nd = None
     for root, dirs, files in os.walk(DATADIR):
