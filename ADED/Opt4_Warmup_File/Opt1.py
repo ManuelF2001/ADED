@@ -120,7 +120,7 @@ if __name__ == '__main__':
           )
 
     # =========================================================================
-    # OPTIMIZATION 1: Query Simplification - Parallel Read
+    # OPTIMIZATION 4: Query Simplification - Parallel Read
     # Remover iterativo os.walk e usar wildcard
     # =========================================================================
 
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
     cl = ['ARM', 'AMD', 'GPU']
 
-    # O resto do código mantém-se propositadamente não otimizado nesta fase
+   
     for tag,months in tag_month.items():
         hours = dict()
         jobs = dict()
