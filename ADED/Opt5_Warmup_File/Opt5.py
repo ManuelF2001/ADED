@@ -119,7 +119,7 @@ if __name__ == '__main__':
           )
 
     # ---------------------------------------------------------
-    # LÓGICA DE LEITURA BASELINE (MANTIDA DE PROPÓSITO)
+    # LÓGICA DE LEITURA BASELINE
     # ---------------------------------------------------------
     nd = None
     for root, dirs, files in os.walk(DATADIR):
@@ -205,7 +205,7 @@ if __name__ == '__main__':
             else:
                 params[f"{c}FailedJobs{tag}"] += count
 
-            # Popular Horas e Jobs (Ignorando LOCAL)
+            # Popular Horas e Jobs 
             if agency != 'LOCAL':
                 params[f"{c}usedhours{tag}"] += (secs / 3600)
                 params[f"{c}Jobs{tag}"] += count
