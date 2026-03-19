@@ -16,7 +16,7 @@ findspark.init()
 
 if __name__ == '__main__':
     # --- INÍCIO DA MEDIÇÃO DE TEMPO ---
-    t_start = time.time()  # [cite: 73]
+    t_start = time.time()  
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--month", nargs='?', help="month")
@@ -26,9 +26,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     DATADIR = '/projects/F202500010HPCVLABUMINHO/DataSets/Reports/2025'
-    OUTDIR = '/projects/F202500010HPCVLABUMINHO/uminhocp043/DATA'  # <-- ATUALIZADO com a tua pasta
+    OUTDIR = '/projects/F202500010HPCVLABUMINHO/uminhocp043/DATA'  
 
-    # (Para não encher o ecrã, mantém o teu dicionário 'params' gigante exatamente como estava no original)
+    
     params = {
         'reportPeriod': 0, 'reportPeriodTrimester': 0, 'reportPeriodYear': 0,
         'reportMonth': 0, 'reportYear': 0, 'armnodes': 1632, 'amdnodes': 500, 'gpunodes': 132,
@@ -113,20 +113,20 @@ if __name__ == '__main__':
     if args.outfile != None:
         outfilename = args.outfile
 
-    os.makedirs(OUTDIR, exist_ok=True)  # Garante que a pasta existe
+    os.makedirs(OUTDIR, exist_ok=True)  
     wfile = open(f"{OUTDIR}/{outfilename}", "w+")
 
     # --- CONFIGURAÇÃO CORRIGIDA DOS LOGS ---
     sc = (SparkSession.builder
-          .config("spark.eventLog.enabled", "true")  # [cite: 67]
+          .config("spark.eventLog.enabled", "true") 
           .config("executor.memory", "4g")
           .config("num.executors", "4")
-          # <-- ATUALIZADO: Caminho real para os teus eventos
+          # <-- ATUALIZADO: Caminho real 
           .config("spark.eventLog.dir", f"file:///projects/F202500010HPCVLABUMINHO/uminhocp043/spark-events")
           .getOrCreate()
           )
 
-    # LÓGICA ORIGINAL DO SCRIPT (Iteração ficheiro a ficheiro) - NÃO TOCAR PARA O BASELINE!
+    # LÓGICA ORIGINAL 
     nd = None
     for root, dirs, files in os.walk(DATADIR):
         for f in files:
@@ -173,14 +173,14 @@ if __name__ == '__main__':
 
     nd = nd.withColumn("totalJobSeconds", (F.col('ElapsedRaw')) * F.col('VNodes'))
 
-    # --- ADICIONADO: IMPRIMIR O PLANO DE EXECUÇÃO (OBRIGATÓRIO) ---
+    # --- ADICIONADO: IMPRIMIR O PLANO DE EXECUÇÃO ---
     print("\n\n--- PHYSICAL PLAN (BASELINE) ---")
     nd.explain("extended")  
     print("--------------------------------\n\n")
 
     cl = ['ARM', 'AMD', 'GPU']
 
-    # LÓGICA ORIGINAL DE COMPUTAÇÃO - MANTÉM OS COLLECTS LENTOS PARA MEDIRMOS A DOR!
+    # LÓGICA ORIGINAL DE COMPUTAÇÃO
     for tag, months in tag_month.items():
         hours = dict()
         jobs = dict()
