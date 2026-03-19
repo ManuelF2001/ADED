@@ -10,7 +10,7 @@ O script de base (`baseline.py`) processa os dados de forma ineficiente. A anál
 
 ---
 
-## ⚡ Otimização 1: Query Simplification (Parallel Read)
+## ⚡ Otimização 4: Query Simplification (Parallel Read)
 **O que mudou:** Removemos o loop iterativo do Python que lia ficheiros individualmente.
 **Como fizemos:** Substituímos o iterativo `.union()` por uma leitura paralela com *wildcard path* (`sc.read.csv("jobs_*.txt")`). O mês de cada registo passou a ser extraído através da função `pyspark.sql.functions.input_file_name()`.
 
