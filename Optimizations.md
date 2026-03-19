@@ -1,30 +1,57 @@
 # Registo de Otimizações Spark SQL (Track A)
 
-Este documento detalha o progresso das otimizações individuais aplicadas ao script de extração de dados do HPC, conforme exigido no guião do projeto.
+Este documento detalha o progresso das otimizações individuais aplicadas ao script de extração de dados do HPC, conforme exigido no guião do projeto. Todas as métricas apresentadas representam as médias de 3 execuções independentes, registadas após o aquecimento prévio da JVM.
 
-##  Baseline
-O script de base (`baseline.py`) processa os dados de forma muito ineficiente. A análise do plano físico (`explain("extended")`) e do tempo de execução revelou falhas graves:
-* **Leitura Iterativa:** Usa um ciclo `for` em Python (`os.walk`) para ler os ficheiros um a um e efetua dezenas de operações `.union()`. Isto impede o Spark de planear a leitura em paralelo.
-* **Driver Bottleneck:** Possui dezenas de ações `.collect()` dentro de loops (por período, por agência, etc.). Isto obriga o Spark a parar o processamento distribuído constantemente para enviar pequenos pedaços de dados de volta ao *Driver*.
+## 🐢 Baseline
+O script de base (`baseline.py`) processa os dados de forma ineficiente. A análise do plano físico e do tempo de execução revelou falhas:
+* **Leitura Iterativa:** Usa `os.walk` para ler ficheiros um a um com dezenas de `.union()`, impedindo paralelização nativa.
+* **Driver Bottleneck:** Muitas ações `.collect()` dentro de loops obrigam o Spark a parar o processamento e a trocar dados com a memória restrita do *Driver*.
+* **Runtime de Referência:** ~76.57 segundos | 77 Stages | 135 Tasks.
 
 ---
 
-##  Otimização 1: Query Simplification (Parallel Read)
+## ⚡ Otimização 1: Query Simplification (Parallel Read)
 **O que mudou:** Removemos o loop iterativo do Python que lia ficheiros individualmente.
-[cite_start]**Como fizemos:** Substituímos o bloco `os.walk` e o iterativo `.union()` por uma leitura única e paralela usando um *wildcard path* (`sc.read.csv("jobs_*.txt")`). O mês de cada registo passou a ser extraído de forma distribuída diretamente da string do nome do ficheiro usando a função `pyspark.sql.functions.input_file_name()` e expressões regulares.
-**Impacto Esperado:** Redução massiva do estrangulamento na leitura e paralelização nativa do Dataframe logo na ingestão.
+**Como fizemos:** Substituímos o iterativo `.union()` por uma leitura paralela com *wildcard path* (`sc.read.csv("jobs_*.txt")`). O mês de cada registo passou a ser extraído através da função `pyspark.sql.functions.input_file_name()`.
+
+### 📊 Resultados Isolados (Opt 1)
+| Métrica | Média (3 runs) | Desvio Padrão |
+| :--- | :--- | :--- |
+| **Runtime (Wall-Clock)** | 53.4700 sec | 0.7212 |
+| **# Stages** | 50.0000 | 0.0000 |
+| **# Tasks** | 556.0000 | 0.0000 |
+| **Shuffle Read (MB)** | 0.0000 MB | 0.0000 |
+| **Shuffle Write (MB)** | 0.0055 MB | 0.0000 |
+| **Driver Time (sec)** | 11.9790 sec | 0.1457 |
+
+*Análise Breve:* A ingestão de ficheiros passou a ser distribuída. Os tempos de execução baixaram >23s. O número disparado de *Tasks* (556) reflete o facto de o Spark dividir ativamente a leitura massiva pelos executores.
 
 ---
 
-##  Otimização 5: Output Path Efficiency (Single Collect)
-**O que mudou:** Evitámos múltiplas chamadas `.collect()` e o trabalho sequencial de geração do ficheiro de output[cite: 48, 130].
-**Como fizemos:** Em vez de usar filtros e operações `groupby` repetidas dentro de um ciclo temporal, agregámos todos os dados do DataFrame de uma só vez usando um único `groupby` pelas chaves principais (`Period`, `Agency`, `cluster`, `COMPLETED`).
-Efetuámos um único `.collect()` deste resultado agregado e pré-calculado (que é muito pequeno e cabe facilmente na RAM do Python). O ficheiro `params.tex` é assim escrito numa passagem única (*single pass*) a partir deste dicionário processado.
+## ⚡ Otimização 3: Join / Shuffle Reduction
+**O que mudou:** Reduzimos a quantidade de operações executadas dentro de loops para calcular métricas de tempo e agência.
+**Como fizemos:** Aplicámos uma *Single-Pass Conditional Aggregation*. O dataset foi agrupado de uma só vez. Condições como período, estado e agência foram avaliadas via `pyspark.sql.functions.when` num único comando `.agg()`.
+
+### 📊 Resultados Isolados (Opt 3)
+| Métrica | Média (3 runs) | Desvio Padrão |
+| :--- | :--- | :--- |
+| **Runtime (Wall-Clock)** | 55.6300 sec | -- |
+| **# Stages** | 31.0000 | -- |
+| **# Tasks** | 112.0000 | -- |
+| **Shuffle Read (MB)** | 0.0000 MB | -- |
+| **Shuffle Write (MB)** | 0.0171 MB | -- |
+| **Driver Time (sec)** | 14.4500 sec | -- |
+
+*Análise Breve:* Remover as contagens dentro de um loop poupou cerca de 46 *Stages* ao motor Catalyst do Spark, baixando o runtime global significativamente face ao Baseline.
+
+---
+
+## ⚡ Otimização 5: Output Path Efficiency (Single Collect)
+**O que mudou:** Evitámos dezenas de chamadas `.collect()` consecutivas que estrangulavam a escrita final do `.tex`.
+**Como fizemos:** Agregámos todos os dados do DataFrame pelas chaves principais (`Period`, `Agency`, `cluster`, `COMPLETED`). O Spark enviou depois um dicionário agregado muito reduzido numa única operação de rede (`single collect`), permitindo que a impressão das variáveis se fizesse imediatamente na RAM do driver.
 
 ### 📊 Resultados Isolados (Opt 5)
-Abaixo encontram-se as métricas recolhidas no HPC Deucalion, usando o nosso *Event-log parser*[cite: 83]. [cite_start]Os resultados representam a média e o desvio padrão de 3 execuções válidas (após "warm-up" da JVM).
-
-| Métrica | Média | Desvio Padrão |
+| Métrica | Média (3 runs) | Desvio Padrão |
 | :--- | :--- | :--- |
 | **Runtime (Wall-Clock)** | 49.0433 sec | 0.4456 |
 | **# Stages** | 26.0000 | 0.0000 |
@@ -33,4 +60,4 @@ Abaixo encontram-se as métricas recolhidas no HPC Deucalion, usando o nosso *Ev
 | **Shuffle Write (MB)** | 0.0473 MB | 0.0000 |
 | **Driver Time (sec)** | 14.3850 sec | 0.2311 |
 
-*Análise Breve:* A redução do número de *Stages* e *Tasks* face à Baseline é notória. Contudo, introduzimos um ligeiro custo de *Shuffle Write* (0.0473 MB), perfeitamente aceitável e justificado pelo facto de o Spark ter agora de trocar dados entre partições na rede para efetuar o grande agrupamento massivo antes do `.collect()` final.
+*Análise Breve:* Otimização massiva. Baixámos o tempo Wall-Clock para ~49 segundos com um esforço mínimo de apenas 26 *Stages*. O ligeiro custo acrescido no Shuffle Write é compensado pela eficiência de devolvermos dados pré-mastigados ao nó mestre.
