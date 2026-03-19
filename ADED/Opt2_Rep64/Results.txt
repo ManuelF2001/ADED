@@ -1,0 +1,10 @@
+===========================================================
+      RESULTADOS FINAIS PARA A TABELA DO RELATÓRIO
+===========================================================
+Runtime (Wall-Clock) | Média:    79.2433 | Desvio Padrão:     0.1701
+# Stages             | Média:    93.0000 | Desvio Padrão:     0.0000
+# Tasks              | Média:  1428.0000 | Desvio Padrão:     0.0000
+Shuffle Read (MB)    | Média:     0.0000 | Desvio Padrão:     0.0000
+Shuffle Write (MB)   | Média:     3.3104 | Desvio Padrão:     0.0000
+Driver Time (sec)    | Média:    14.1337 | Desvio Padrão:     0.2458
+===========================================================
