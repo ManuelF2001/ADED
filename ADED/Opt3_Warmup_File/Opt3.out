@@ -1,0 +1,17 @@
+starting org.apache.spark.deploy.master.Master, logging to /projects/F202500010HPCVLABUMINHO/uminhocp043/spark-3.5.4-bin-hadoop3/logs/spark-renatocg8-org.apache.spark.deploy.master.Master-1-cna0203.out
+cna0205: starting org.apache.spark.deploy.worker.Worker, logging to /projects/F202500010HPCVLABUMINHO/uminhocp043/spark-3.5.4-bin-hadoop3/logs/spark-renatocg8-org.apache.spark.deploy.worker.Worker-1-cna0205.deucalion.macc.fccn.pt.out
+cna0204: starting org.apache.spark.deploy.worker.Worker, logging to /projects/F202500010HPCVLABUMINHO/uminhocp043/spark-3.5.4-bin-hadoop3/logs/spark-renatocg8-org.apache.spark.deploy.worker.Worker-1-cna0204.deucalion.macc.fccn.pt.out
+/projects/F202500010HPCVLABUMINHO/renatocg8/ADED_Project/Opt3.py:165: SyntaxWarning: invalid escape sequence '\i'
+  'monthhours': '{\inteval{\\ndays * 24}}',
+/projects/F202500010HPCVLABUMINHO/renatocg8/ADED_Project/Opt3.py:166: SyntaxWarning: invalid escape sequence '\i'
+  'hoursTrimester': '{\inteval{\\ndaysTrimester * 24}}',
+/projects/F202500010HPCVLABUMINHO/renatocg8/ADED_Project/Opt3.py:167: SyntaxWarning: invalid escape sequence '\i'
+  'hoursYear': '{\inteval{\\ndaysYear * 24}}'
+  File "/projects/F202500010HPCVLABUMINHO/renatocg8/ADED_Project/Opt3.py", line 376
+    optimized_results = agg_df.collect()
+IndentationError: unexpected indent
+26/03/17 18:03:56 INFO ShutdownHookManager: Shutdown hook called
+26/03/17 18:03:56 INFO ShutdownHookManager: Deleting directory /tmp/spark-810605db-2776-486b-ba52-70615db5ee5b
+cna0205: stopping org.apache.spark.deploy.worker.Worker
+cna0204: stopping org.apache.spark.deploy.worker.Worker
+stopping org.apache.spark.deploy.master.Master
